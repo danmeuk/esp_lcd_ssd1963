@@ -39,7 +39,7 @@ If you don't do this, you will experience trouble.
 
 This defaults to an 8MHz speed, always best to start slow and build up.
 
-To same some precious ESP32 pins, you can tie the CS pin to GND permanently and set LCD_CS to GPIO_NUM_NC.
+To save some precious ESP32 pins, you can tie the CS pin to GND permanently and set LCD_CS to GPIO_NUM_NC.
 
 This code will not work on its own, you need to configure other things such as LVGL and buffers etc.
 It is provided for guidance only.
