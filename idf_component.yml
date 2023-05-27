@@ -1,0 +1,5 @@
+version: "1.0"
+description: ESP LCD SSD1963 - LCD driver
+url: https://github.com/danmeuk/esp_lcd_ssd1963
+dependencies:
+  idf: ">=4.4.2"
