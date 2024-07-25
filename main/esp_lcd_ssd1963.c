@@ -43,6 +43,7 @@
 #include "esp_log.h"
 #include "esp_check.h"
 #include "esp_timer.h"
+#include "esp_mac.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,6 +76,37 @@ typedef struct {
 	bool							swap_axes;
 	uint8_t							backlight;
 } ssd1963_panel_t;
+/**
+ * Converts the mcu interface bits per pixel to the proper command code for the SSD9163 command: set_pixel_data_interface
+ * 
+ * Pixel Data Interface Format (POR = 101)
+ * 000 8-bit
+ * 001 12-bit
+ * 010 16-bit packed
+ * 011 16-bit (565 format)
+ * 100 18-bit
+ * 101 24-bit
+ * 110 9-bit
+ * Others Reserved
+ */
+uint8_t mcu_bit_interface_to_pixel_intf_cmd(int mcu_bit_interface) {
+	uint8_t pixel_intf;
+	switch (mcu_bit_interface)
+	{
+	case 8:
+		pixel_intf = 0x00; // 000 8-bit
+		break;
+	case 9:
+		pixel_intf = 0x06; // 110 9-bit
+		break;
+	case 16: // TODO: It is ambiguous if you want to use the 565 format or packed format
+		pixel_intf = 0x03; // 011 16-bit (565 format)
+		break;
+	default:
+		ESP_GOTO_ON_FALSE(false, ESP_ERR_NOT_SUPPORTED, err, TAG, "unsupported mcu bit interface (8 or 16 bit only)");
+	}
+	return pixel_intf;
+}
 
 esp_err_t esp_lcd_new_panel_ssd1963(const esp_lcd_panel_io_handle_t io, const esp_lcd_panel_dev_config_t *panel_dev_config, esp_lcd_panel_handle_t *ret_panel)
 {
@@ -101,7 +133,7 @@ esp_err_t esp_lcd_new_panel_ssd1963(const esp_lcd_panel_io_handle_t io, const es
     }
 
 	ssd1963->addr_mode = 0x00;
-	ssd1963->pixel_intf = 0x03;				/* for now, only 16-bit (565) data supported */
+	ssd1963->pixel_intf = mcu_bit_interface_to_pixel_intf_cmd(vendor_cfg->mcu_bit_interface);				/* for now, only 16-bit (565) data supported */
 	ssd1963->width = vendor_cfg->lcd_width;
 	ssd1963->height = vendor_cfg->lcd_height;
 	ESP_GOTO_ON_FALSE(ssd1963->width <= 864, ESP_ERR_INVALID_ARG, err, TAG, "maximum width for ssd1963 is 864 pixels");
@@ -124,16 +156,6 @@ esp_err_t esp_lcd_new_panel_ssd1963(const esp_lcd_panel_io_handle_t io, const es
         ESP_GOTO_ON_FALSE(false, ESP_ERR_NOT_SUPPORTED, err, TAG, "unsupported pixel width");
         break;
     }
-
-	switch (vendor_cfg->mcu_bit_interface)
-	{
-	case 8:
-		break;
-	case 16:
-		break;
-	default:
-		ESP_GOTO_ON_FALSE(false, ESP_ERR_NOT_SUPPORTED, err, TAG, "unsupported mcu bit interface (8 or 16 bit only)");
-	}
 	
     ssd1963->io = io;
     ssd1963->bits_per_pixel = panel_dev_config->bits_per_pixel;
